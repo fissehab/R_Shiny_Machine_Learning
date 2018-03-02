@@ -129,7 +129,7 @@ my_model
 ```
 
 
-### Save the model. We will use load it in the shiny app
+### Save the model. We will use it in the shiny app
 ```{r}
 save(my_model , file = 'RegularizedLogisticRegression.rda')
 ```
