@@ -1,0 +1,137 @@
+---
+title: "Regularized Logistic Regression"
+output:
+  html_document:
+    df_print: paged
+---
+
+Shiny is a good way to demo your machine learning model or to submit your machine learning challenge so that others can quikly upload test data and get amazed by your nice model. In this notebook, we will build a regularized logistic regression that predicts whether microchips from a fabrication plant passes quality assurance (QA). During QA, each microchip goes through various tests to ensure it is functioning correctly. Suppose you are the product manager of the factory and you have the test results for some microchips on two diffeerent tests. From these two tests, you would like to determine whether the microchips should be accepted or rejected. Next, we will save the model and build a shiny app and test the app by uploading test data. Finally, we will download the data we uploaded with predictions using the machine learning model we buit below. The data is from the famous Machine Learning Coursera Course by Andrew Ng. The data can be downloaded from [here](http://datascience-enthusiast.com/data/ex2data2.txt).
+
+
+**We will use the caret package for cross-validation and grid search**
+```{r, message=FALSE}
+library(readr)
+library(caret)
+library(tidyverse)
+```
+
+## Read data, show sample
+```{r, comment=''}
+df2 = read_csv("ex2data2.txt", col_names = FALSE)
+head(df2)
+```
+
+### Save 20 rows for testing
+```{r}
+reserved = df2 %>% sample_n(20)
+df2_train = df2 %>% setdiff(reserved)
+```
+
+```{r,comment=''}
+dim(reserved)
+```
+
+```{r,comment=''}
+dim(df2_train)
+```
+
+
+```{r,comment=''}
+nrow(df2_train %>% intersect(reserved))
+```
+
+### Save the test data. We will upload this to the shiny app to get predictions
+```{r}
+write.csv(reserved, 'test_data.csv', row.names = FALSE)
+```
+
+### Name columns
+```{r}
+names(df2_train) = c("Test1", "Test2", "Label")
+```
+
+
+
+### Visualize the data
+```{r, fig.width=8, fig.height=6}
+cols <- c("0" = "red","1" = "blue")
+df2_train %>% ggplot(aes(x = Test1, y = Test2, color = factor(Label))) + geom_point(size = 4, shape = 19, alpha = 0.6) +
+scale_colour_manual(values = cols,labels = c("Failed", "Passed"),name="Test Result")
+```
+
+
+
+
+### Feature Engineering
+The above figure shows that our dataset cannot be separated into positive and negative examples by a straight-line through the plot. Therefore, a straightforward application of logistic regression will not perform well on this dataset since logistic regression will only be able to find a linear decision boundary. One way to fit the data better is to create more features from each data point. Let's map the features into all polynomial terms of x1 and x2 up to the sixth power. We have also to save this function for later use with the shiny app to create features from the uploaded data.
+
+```{r}
+feature_mapping = function(df){
+       new_data = c()
+
+    for(i in 1:6){
+        for(j in 0:i){
+            temp = (df$Test1)^i+(df$Test2)^(i-j)
+            new_data = cbind(new_data,temp)
+        }
+    }
+
+     colnames(new_data) = paste0("V",1:ncol(new_data))
+    new_data
+}
+```
+
+```{r, comment=''}
+mapped = feature_mapping(df2_train)
+head(mapped)
+```
+
+```{r, comment=''}
+df_final = cbind(df2_train, mapped)
+dim(df_final)
+```
+
+
+```{r}
+df_final$Label = as.factor(df_final$Label )
+```
+
+
+```{r}
+levels(df_final$Label) <- c("Failed", "Passed")
+```
+
+
+### Building a regularized logistic regression model using cross-validation and grid search
+
+```{r, comment=''}
+
+set.seed(0)
+
+cctrl1 <- trainControl(method = "cv", number = 10,
+                       allowParallel = TRUE,
+                       summaryFunction = twoClassSummary,
+                       classProbs = TRUE
+                       )
+
+
+rlGrid <- expand.grid( cost = seq(0.001, 1, length.out = 20),
+                       loss =  "L2_primal",
+                       epsilon = 0.01 )
+
+my_model <- train(Label ~ .,  data = df_final, 
+                  method = 'regLogistic',
+                  trControl = cctrl1,
+                  metric = "ROC", 
+                  preProc = c("center", "scale"),
+                  tuneGrid = rlGrid)
+my_model 
+```
+
+
+### Save the model. We will use load it in the shiny app
+```{r}
+save(my_model , file = 'RegularizedLogisticRegression.rda')
+```
+
+
