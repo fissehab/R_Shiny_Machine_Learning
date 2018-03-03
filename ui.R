@@ -57,7 +57,7 @@ dashboardPage(skin="black",
                           br(),
                           br(),
                       column(width = 4,
-                             fileInput('file1', em('Upload test data in csv format ',style="text-align:center;color:red;font-size:150%"),multiple = FALSE,
+                             fileInput('file1', em('Upload test data in csv format ',style="text-align:center;color:blue;font-size:150%"),multiple = FALSE,
                                        accept=c('.csv')),
                              
                              uiOutput("sample_input_data_heading"),
@@ -89,8 +89,9 @@ dashboardPage(skin="black",
                             )),
                           fluidRow(
                             
-                            column(width = 4,
-                            downloadButton("downloadData", em('Download Predictions',style="text-align:center;color:blue;font-size:150%"))
+                            column(width = 7,
+                            downloadButton("downloadData", em('Download Predictions',style="text-align:center;color:blue;font-size:150%")),
+                            plotOutput('plot_predictions')
                             ),
                             column(width = 4,
                             uiOutput("sample_prediction_heading"),

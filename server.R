@@ -1,18 +1,9 @@
 
-packages_to_use <- c( "caret", "shiny", "LiblineaR", "readr", "dplyr")
-
-
-install_load <- function(packages){
-  to_install <- packages[!(packages %in% installed.packages()[, "Package"])] # identify unavailable packages
-  
-  if (length(to_install)){  # install unavailable packages 
-    install.packages(to_install, repos='http://cran.us.r-project.org', dependencies = TRUE) # install those that have not yet been installed
-  }
-  
-  for(package in packages){  # load all of the packges 
-    suppressMessages(library(package, character.only = TRUE))
-  }
-}
+library(caret)
+library(shiny)
+library(LiblineaR)
+library(readr)
+library(ggplot2)
 
 
 
@@ -101,8 +92,17 @@ output$sample_prediction_heading = renderUI({  # show only if data has been uplo
 
 output$sample_predictions = renderTable({   # the last 6 rows to show
  pred = predictions()
-tail(pred)
+head(pred)
 
+})
+
+
+output$plot_predictions = renderPlot({   # the last 6 rows to show
+  pred = predictions()
+  cols <- c("Failed" = "red","Passed" = "blue")
+ ggplot(pred, aes(x = Test1, y = Test2, color = factor(prediction))) + geom_point(size = 4, shape = 19, alpha = 0.6) +
+    scale_colour_manual(values = cols,labels = c("Failed", "Passed"),name="Test Result")
+  
 })
 
 
